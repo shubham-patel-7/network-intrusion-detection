@@ -125,6 +125,8 @@ The app has six pages, in a dark theme:
 | **Bench** | A standalone page (`app/bench.html`) where you pick one of 132 real `KDDTest+` records and see five classifiers label it side by side; the Decision Tree, SVM, MLP and LSTM run in your browser and the Random Forest results are precomputed |
 | **About** | Method, limitations, future work, authors and references |
 
+Each page has its own link: add `?page=overview`, `results`, `ablations`, `detector`, `bench` or `about` to the app address, for example `https://nsl-kdd-ids-demo.streamlit.app/?page=results`.
+
 **Two studies live in this repository.** The Overview, Results, Ablations and Bench pages present a group lab project (Information Security Lab, MIT Manipal) that compared **Decision Tree, Random Forest, SVM, MLP and LSTM**; its numbers are transcribed from the project's IEEE-format report into `app/study_data.py`, not recomputed by the app (run on 2 CPU cores, scikit-learn 1.9.1, TensorFlow 2.21; five seeds for the main results, one seed for the ablations). The Detector page and the results tables further up this README belong to this repository's own earlier study, which compared **Logistic Regression, Random Forest, XGBoost and a PyTorch MLP** with three seeds. The two sets of models and numbers are different and are labelled as such in the app.
 
 Study authors: Shubham Patel, Vinamra Lilariaa, Tejas Baid and Anushka Chitranshi.

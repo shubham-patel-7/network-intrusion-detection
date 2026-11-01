@@ -30,10 +30,17 @@ PAGES = {
 }
 
 
+SLUGS = {name.split(" ", 1)[1].lower(): name for name in PAGES}  # overview, results, ablations, detector, bench, about
+
+
 def main():
     ui.inject_css()
-    st.session_state.setdefault("page", "🏠 Overview")
+    if "page" not in st.session_state:  # first load: honour a deep link such as ?page=results
+        st.session_state["page"] = SLUGS.get(str(st.query_params.get("page", "")).lower(), "🏠 Overview")
     page = st.radio("Page", list(PAGES), key="page", horizontal=True, label_visibility="collapsed")
+    slug = page.split(" ", 1)[1].lower()
+    if st.query_params.get("page") != slug:
+        st.query_params["page"] = slug  # keep the address bar shareable
     st.write("")
     PAGES[page]()
 

@@ -134,6 +134,18 @@ def test_every_study_page_renders(page):
     assert not at.exception, (page, at.exception)
 
 
+@pytest.mark.skipif(not has_models, reason="models not trained")
+def test_deep_link_opens_the_requested_page():
+    from streamlit.testing.v1 import AppTest
+
+    at = AppTest.from_file(str(ROOT / "app" / "streamlit_app.py"), default_timeout=120)
+    at.query_params["page"] = "ablations"
+    at.run()
+    assert not at.exception, at.exception
+    assert at.session_state["page"] == "🧪 Ablations"
+    assert any("Ablations" in m.value for m in at.markdown)
+
+
 def test_study_data_is_consistent():
     """Cross-checks of the transcribed report tables against statements made in the report text."""
     import sys
