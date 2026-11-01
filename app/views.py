@@ -17,6 +17,23 @@ def _go(page):
     st.session_state["page"] = page
 
 
+def _try(model):
+    """Open the Detector with this model selected."""
+    st.session_state["detector_set"] = "The five study models"
+    st.session_state["detector_model"] = model
+    st.session_state["page"] = "🛡️ Detector"
+
+
+def _card_items():
+    items = []
+    for m in M:
+        c = S.COST[m]
+        items.append(dict(name=m, family=S.FAMILY[m], color=COLORS[m], tagline=S.MODEL_NOTES[m]["tagline"],
+                          stats=[(f"{S.MAIN[m]['mf1'][0]:.3f}", "macro-F1"), (f"{S.MAIN[m]['acc'][0]:.3f}", "accuracy"),
+                                 (f"{c['train'][0]:.1f} s", "training time"), (f"{c['lat']:.2f} ms", "per record")]))
+    return items
+
+
 # ---------------------------------------------------------------- Overview
 def overview():
     ui.hero("Information Security Lab · MIT Manipal",
@@ -31,6 +48,12 @@ def overview():
              ("0.641", "best macro-F1 (LSTM)", "0.631 for the MLP, 0.510 to 0.612 classical"),
              ("70-79 s", "neural training time on 2 CPU cores", "vs 0.9 to 11.3 s classical")])
 
+    ui.section("Meet the five models",
+               "Three classical models and two neural networks, trained and tested under exactly the same conditions. Scores are "
+               "from the full KDDTest+ file (mean over five seeds); times are on 2 CPU cores.")
+    ui.model_cards(_card_items())
+    st.button("🤖 Explore each model in detail", on_click=_go, args=("🤖 Models",))
+
     ui.section("What the study found")
     ui.cards(S.FINDINGS)
 
@@ -38,7 +61,7 @@ def overview():
     c1, c2, c3, c4 = st.columns(4)
     c1.button("📊 Full results", on_click=_go, args=("📊 Results",), width="stretch")
     c2.button("🧪 Ablations", on_click=_go, args=("🧪 Ablations",), width="stretch")
-    c3.button("🛡️ Try the detector", on_click=_go, args=("🛡️ Detector",), width="stretch")
+    c3.button("🛡️ Run the five models", on_click=_go, args=("🛡️ Detector",), width="stretch")
     c4.button("🔬 Pick a record", on_click=_go, args=("🔬 Bench",), width="stretch")
 
     ui.section("Why the test set is a hard one",
@@ -78,6 +101,76 @@ def overview():
     for q, a in S.RESEARCH_QUESTIONS:
         with st.expander(q):
             st.write(a)
+    ui.source(SRC)
+
+
+# ---------------------------------------------------------------- Models
+def models():
+    ui.section("The five models",
+               "Every model gets the same data, the same split, the same metric code and the same tuning budget (20 random "
+               "configurations, scored by validation macro-F1). Scores are from the full KDDTest+ file, mean over five seeds.")
+    ui.model_cards(_card_items())
+
+    ui.section("Look closer")
+    pick = st.radio("Model", M, horizontal=True, key="model_pick", label_visibility="collapsed")
+    note, fam = S.MODEL_NOTES[pick], S.FAMILY[pick]
+    left, right = st.columns([1.1, 1])
+    with left:
+        st.markdown(f"### {pick}  ·  {fam}")
+        st.write(note["how"])
+        st.caption(f"Frozen configuration: {S.CONFIG[pick][0]}. Validation macro-F1 {S.CONFIG[pick][1]:.3f}, "
+                   f"against {S.MAIN[pick]['mf1'][0]:.3f} on the test file.")
+        st.markdown("**What stood out in the report**")
+        for s in note["stood_out"]:
+            st.markdown(f"- {s}")
+        st.button(f"🛡️ Run {pick} on your own records", on_click=_try, args=(pick,))
+    with right:
+        rows = [dict(Class=c, Measure=k, Value=S.PER_CLASS[pick][c][i]) for c in S.CLASSES for i, k in enumerate(["Recall", "F1"])]
+        ch = alt.Chart(pd.DataFrame(rows)).mark_bar(cornerRadiusEnd=4).encode(
+            x=alt.X("Class:N", sort=S.CLASSES, axis=alt.Axis(labelAngle=0, title=None)), xOffset="Measure:N",
+            y=alt.Y("Value:Q", title=None, scale=alt.Scale(domain=[0, 1])),
+            color=alt.Color("Measure:N", scale=alt.Scale(domain=["Recall", "F1"], range=[COLORS[pick], "#64748b"]),
+                            legend=alt.Legend(title=None)),
+            tooltip=["Class", "Measure", alt.Tooltip("Value:Q", format=".2f")])
+        st.altair_chart(ui.style(ch, 260), width="stretch")
+        st.caption(f"{pick}: recall and F1 per class on KDDTest+ (mean over five seeds).")
+    s, c = S.MAIN[pick], S.COST[pick]
+    h = S.HARD[pick]
+    ui.kpis([(f"{s['acc'][0]:.3f}", "accuracy", f"± {s['acc'][1]:.3f}"), (f"{s['mf1'][0]:.3f}", "macro-F1", f"± {s['mf1'][1]:.3f}"),
+             (f"{s['det'][0]:.1f}%", "attacks flagged", f"{s['fpr'][0]:.1f}% false alarms on Normal"),
+             (f"{h['u_det'][0]:.1f}%", "unseen attack types flagged", f"{h['u_acc'][0]:.1f}% given the right family"),
+             (f"{c['lat']:.2f} ms", "per record", f"{c['train'][0]:.1f} s to train · {c['size']:g} MB")])
+
+    ui.section("All five side by side")
+    rows = []
+    for m in M:
+        r = S.MAIN[m]
+        rows.append({"Model": m, "Family": S.FAMILY[m], "Macro-F1": r["mf1"][0], "Accuracy": r["acc"][0], "Attacks flagged (%)": r["det"][0],
+                     "False alarms (%)": r["fpr"][0], "R2L recall": S.PER_CLASS[m]["R2L"][0], "U2R recall": S.PER_CLASS[m]["U2R"][0],
+                     "Unseen flagged (%)": S.HARD[m]["u_det"][0], "Training (s)": S.COST[m]["train"][0], "Per record (ms)": S.COST[m]["lat"],
+                     "Size (MB)": S.COST[m]["size"]})
+    df = pd.DataFrame(rows)
+    st.dataframe(df, hide_index=True, width="stretch", column_config={
+        "Macro-F1": st.column_config.ProgressColumn(format="%.3f", min_value=0.4, max_value=0.7),
+        "Accuracy": st.column_config.ProgressColumn(format="%.3f", min_value=0.6, max_value=0.85)})
+    st.caption("The ranking depends on what you value: the LSTM and MLP lead on macro-F1 and accuracy, the Random Forest on ROC-AUC and "
+               "false alarms, the Decision Tree and SVM on speed and size.")
+    try:
+        import study_models
+        if study_models.available():
+            meas = study_models.meta()
+            with st.expander("The copies of these models running in this app"):
+                st.markdown("The Detector page runs copies of the five models that were retrained for this app on the full KDDTrain+, "
+                            "with the report's settings, and tested once on KDDTest+. They match the report closely but are not the same "
+                            "runs (one seed, and a different deep-learning backend for the MLP and LSTM), so small differences are expected.")
+                st.dataframe(pd.DataFrame([{"Model": m,
+                                            "Accuracy (this app)": meas[study_models.KEY_OF[m]]["test"]["acc"],
+                                            "Accuracy (report)": S.MAIN[m]["acc"][0],
+                                            "Macro-F1 (this app)": meas[study_models.KEY_OF[m]]["test"]["macro_f1"],
+                                            "Macro-F1 (report)": S.MAIN[m]["mf1"][0]} for m in M]).round(3),
+                             hide_index=True, width="stretch")
+    except Exception:  # the page must not fail if the exported models are absent
+        pass
     ui.source(SRC)
 
 
@@ -324,9 +417,11 @@ def about():
     st.markdown(
         "This app presents the results of an **Information Security Lab mini project at MIT Manipal**: a controlled comparison of "
         "classical machine learning and deep learning for network intrusion detection on the NSL-KDD dataset. The study is written up "
-        "as an IEEE-format report; the **Results** and **Ablations** pages reproduce its numbers. The **Detector** page is a separate, "
-        "working tool built on four other models trained in this repository (Logistic Regression, Random Forest, XGBoost and an MLP), "
-        "and the **Bench** page lets you pick a test record and watch five classifiers label it.")
+        "as an IEEE-format report; the **Models**, **Results** and **Ablations** pages reproduce its numbers. The **Detector** page runs "
+        "copies of the five models on your own CSV files (retrained for this app with the report's settings, so close to but not "
+        "identical to the report's runs), and the **Bench** page lets you pick a test record and watch five classifiers label it. "
+        "An earlier study in this repository, with four other models (Logistic Regression, Random Forest, XGBoost and an MLP), is "
+        "still available in the Detector under \"Earlier four models\".")
     st.markdown("**Authors:** " + ", ".join(S.AUTHORS) + ".")
 
     ui.section("Method in brief")

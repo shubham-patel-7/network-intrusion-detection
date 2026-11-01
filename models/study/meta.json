@@ -1,0 +1,121 @@
+{
+ "DT": {
+  "config": {
+   "max_depth": 15,
+   "min_samples_leaf": 5,
+   "criterion": "entropy"
+  },
+  "epochs": null,
+  "settings_from": "results/best_DT.json (this repository's tuning run)",
+  "train_seconds": 4.5,
+  "test": {
+   "acc": 0.7482256919801278,
+   "macro_f1": 0.530530387532121,
+   "det_rate": 0.6940699758435284,
+   "fpr_normal": 0.033261250128720006,
+   "recall": {
+    "Normal": 0.96673874987128,
+    "DoS": 0.7319034852546917,
+    "Probe": 0.7327550598926064,
+    "R2L": 0.08180242634315425,
+    "U2R": 0.14925373134328357
+   }
+  }
+ },
+ "RF": {
+  "config": {
+   "n_estimators": 287,
+   "max_depth": null,
+   "max_features": "sqrt",
+   "min_samples_leaf": 1
+  },
+  "epochs": null,
+  "settings_from": "results/best_RF.json (this repository's tuning run)",
+  "train_seconds": 33.4,
+  "test": {
+   "acc": 0.743124556422995,
+   "macro_f1": 0.5159789089710378,
+   "det_rate": 0.5925348710356113,
+   "fpr_normal": 0.027803521779425393,
+   "recall": {
+    "Normal": 0.9721964782205746,
+    "DoS": 0.7599195710455764,
+    "Probe": 0.6435357290375878,
+    "R2L": 0.02703639514731369,
+    "U2R": 0.1044776119402985
+   }
+  }
+ },
+ "SVM": {
+  "config": {
+   "C": 17.341945099998505,
+   "gamma": 0.8574039690859626
+  },
+  "epochs": null,
+  "settings_from": "results/best_SVM.json (this repository's tuning run)",
+  "train_seconds": 19.5,
+  "test": {
+   "acc": 0.7620209368346345,
+   "macro_f1": 0.6132492969264117,
+   "det_rate": 0.6441985506117042,
+   "fpr_normal": 0.03140768201009165,
+   "recall": {
+    "Normal": 0.9685923179899083,
+    "DoS": 0.7722520107238606,
+    "Probe": 0.6237092110698058,
+    "R2L": 0.16568457538994802,
+    "U2R": 0.3582089552238806
+   }
+  }
+ },
+ "MLP": {
+  "config": {
+   "units": 165,
+   "dropout": 0.06,
+   "lr": 0.0012,
+   "batch": 256,
+   "clip": 0
+  },
+  "epochs": 44,
+  "settings_from": "the report's Table IX",
+  "train_seconds": 559.3,
+  "test": {
+   "acc": 0.8042494677075941,
+   "macro_f1": 0.6252378047716987,
+   "det_rate": 0.7542273825294163,
+   "fpr_normal": 0.034599938214396046,
+   "recall": {
+    "Normal": 0.965400061785604,
+    "DoS": 0.8257372654155496,
+    "Probe": 0.7732342007434945,
+    "R2L": 0.23986135181975737,
+    "U2R": 0.47761194029850745
+   }
+  }
+ },
+ "LSTM": {
+  "config": {
+   "units": 83,
+   "dropout": 0.01,
+   "lr": 0.0064,
+   "batch": 512,
+   "clip": 0
+  },
+  "epochs": 39,
+  "settings_from": "the report's Table IX",
+  "train_seconds": 241.0,
+  "test": {
+   "acc": 0.8050922640170334,
+   "macro_f1": 0.6421649423808453,
+   "det_rate": 0.7531364451024702,
+   "fpr_normal": 0.038821954484605084,
+   "recall": {
+    "Normal": 0.9611780455153949,
+    "DoS": 0.8345844504021448,
+    "Probe": 0.7034283353985956,
+    "R2L": 0.2932409012131716,
+    "U2R": 0.6119402985074627
+   }
+  }
+ }
+}

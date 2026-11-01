@@ -114,20 +114,21 @@ streamlit run app/streamlit_app.py
 
 Upload a CSV (header optional; either the 41 NSL-KDD feature columns, or a raw 41-43 column NSL-KDD file) and choose the task, model and alert threshold. The app shows how many records are flagged, a table of the most suspicious ones, accuracy and a confusion table if a `label` column is present, and lets you download all predictions. `sample_data/sample_traffic.csv` has 500 `KDDTest+` records to try it with.
 
-The app has six pages, in a dark theme:
+The app has seven pages, in a dark theme, built around the study's five models (**Decision Tree, Random Forest, SVM, MLP and LSTM**):
 
 | Page | What it shows |
 |---|---|
-| **Overview** | The question, headline numbers, the five findings, the train-versus-test class distribution, the pipeline diagram and the answers to the four research questions |
+| **Overview** | The question, headline numbers, a card for each of the five models, the five findings, the train-versus-test class distribution, the pipeline diagram and the answers to the four research questions |
+| **Models** | The five models side by side, then a closer look at each: how it works, its frozen configuration, per-class recall and F1, what stood out in the report, and a button to run it on your own records |
 | **Results** | Interactive charts of the lab report's results: accuracy, macro-F1 and other metrics with error bars (full test file or the harder KDDTest-21), bootstrap intervals, per-class recall and F1, the accuracy-versus-cost trade-off, and detection of unseen attack types |
 | **Ablations** | Binary task, class imbalance (none, class weights, SMOTE), feature groups and training-set size |
-| **Detector** | The CSV tool described above, using the four models trained in this repository |
+| **Detector** | Upload a CSV of connection records and classify every record with any of the five study models (default), or run all five on the same file and see where they disagree. The earlier four models of this repository (the CSV tool described above) are still available under "Earlier four models" |
 | **Bench** | A standalone page (`app/bench.html`) where you pick one of 132 real `KDDTest+` records and see five classifiers label it side by side; the Decision Tree, SVM, MLP and LSTM run in your browser and the Random Forest results are precomputed |
 | **About** | Method, limitations, future work, authors and references |
 
-Each page has its own link: add `?page=overview`, `results`, `ablations`, `detector`, `bench` or `about` to the app address, for example `https://nsl-kdd-ids-demo.streamlit.app/?page=results`.
+Each page has its own link: add `?page=overview`, `models`, `results`, `ablations`, `detector`, `bench` or `about` to the app address, for example `https://nsl-kdd-ids-demo.streamlit.app/?page=results`.
 
-**Two studies live in this repository.** The Overview, Results, Ablations and Bench pages present a group lab project (Information Security Lab, MIT Manipal) that compared **Decision Tree, Random Forest, SVM, MLP and LSTM**; its numbers are transcribed from the project's IEEE-format report into `app/study_data.py`, not recomputed by the app (run on 2 CPU cores, scikit-learn 1.9.1, TensorFlow 2.21; five seeds for the main results, one seed for the ablations). The Detector page and the results tables further up this README belong to this repository's own earlier study, which compared **Logistic Regression, Random Forest, XGBoost and a PyTorch MLP** with three seeds. The two sets of models and numbers are different and are labelled as such in the app.
+**Two studies live in this repository.** The Overview, Results, Ablations and Bench pages present a group lab project (Information Security Lab, MIT Manipal) that compared **Decision Tree, Random Forest, SVM, MLP and LSTM**; its numbers are transcribed from the project's IEEE-format report into `app/study_data.py`, not recomputed by the app (run on 2 CPU cores, scikit-learn 1.9.1, TensorFlow 2.21; five seeds for the main results, one seed for the ablations). The five models that the Detector runs by default are copies of the study's models retrained for the app on the full `KDDTrain+` with the report's settings and exported to `models/study/` (one seed, and the MLP and LSTM run on the Keras PyTorch backend), so their scores are close to but not identical to the report's; each was tested once on `KDDTest+`, and `models/study/meta.json` holds those results. The results tables further up this README belong to this repository's own earlier study, which compared **Logistic Regression, Random Forest, XGBoost and a PyTorch MLP** with three seeds. The two sets of models and numbers are different and are labelled as such in the app.
 
 Study authors: Shubham Patel, Vinamra Lilariaa, Tejas Baid and Anushka Chitranshi.
 
@@ -162,6 +163,7 @@ src/ids/
 app/streamlit_app.py      page navigation (entry point)
 app/views.py              Overview, Results, Ablations, About pages (Altair charts)
 app/study_data.py         the lab report's tables, transcribed
+app/study_models.py       loads and runs the study's five models (models/study/)
 app/detector.py           Detector and Bench pages
 app/ui.py                 theme, CSS and chart styling;  app/bench.html: the embedded bench page
 .streamlit/config.toml    dark theme

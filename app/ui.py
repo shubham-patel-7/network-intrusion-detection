@@ -40,11 +40,21 @@ h1, h2, h3 {{ letter-spacing: -0.01em; }}
 .kpi .s {{ margin-top: 2px; color: {ACCENT}; font-size: .78rem; }}
 
 /* finding cards */
-.cards {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; margin: 8px 0; }}
+.cards {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(188px, 1fr)); gap: 12px; margin: 8px 0; }}
 .card {{ border: 1px solid {LINE}; border-radius: 14px; padding: 16px; background: {PANEL}; }}
 .card .n {{ color: {ACCENT}; font: 700 .78rem ui-monospace, Menlo, monospace; letter-spacing: .12em; }}
 .card h4 {{ margin: 6px 0 6px; font-size: 1.02rem; line-height: 1.3; }}
 .card p {{ margin: 0; color: {MUTE}; font-size: .88rem; line-height: 1.55; }}
+
+/* model cards */
+.mcards {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(176px, 1fr)); gap: 12px; margin: 8px 0; }}
+.mcard {{ border: 1px solid {LINE}; border-top: 3px solid var(--c); border-radius: 14px; padding: 14px 15px 13px; background: {PANEL}; }}
+.mcard .fam {{ font: 600 .68rem ui-monospace, Menlo, monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--c); }}
+.mcard h4 {{ margin: 6px 0 4px; font-size: 1.12rem; }}
+.mcard .tag {{ color: {MUTE}; font-size: .8rem; line-height: 1.4; min-height: 2.3em; }}
+.mcard .stats {{ display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; margin-top: 12px; }}
+.mcard .stats b {{ display: block; font-size: 1.02rem; }}
+.mcard .stats span {{ color: {MUTE}; font-size: .72rem; }}
 
 /* section headings */
 .sec {{ margin: 30px 0 4px; font-size: 1.3rem; font-weight: 700; display: flex; align-items: center; gap: 10px; }}
@@ -97,6 +107,17 @@ def cards(items):
     cells = "".join(f'<div class="card"><div class="n">{i:02d}</div><h4>{html.escape(t)}</h4><p>{html.escape(p)}</p></div>'
                     for i, (t, p) in enumerate(items, 1))
     st.markdown(f'<div class="cards">{cells}</div>', unsafe_allow_html=True)
+
+
+def model_cards(items):
+    """items: dicts with name, family, color, tagline and stats [(value, label), ...]."""
+    cells = ""
+    for it in items:
+        stats = "".join(f"<div><b>{html.escape(v)}</b><span>{html.escape(l)}</span></div>" for v, l in it["stats"])
+        cells += (f'<div class="mcard" style="--c:{it["color"]}"><div class="fam">{html.escape(it["family"])}</div>'
+                  f'<h4>{html.escape(it["name"])}</h4><div class="tag">{html.escape(it["tagline"])}</div>'
+                  f'<div class="stats">{stats}</div></div>')
+    st.markdown(f'<div class="mcards">{cells}</div>', unsafe_allow_html=True)
 
 
 def section(title, sub=None):

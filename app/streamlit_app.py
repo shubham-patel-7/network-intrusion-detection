@@ -22,6 +22,7 @@ import views  # noqa: E402
 
 PAGES = {
     "🏠 Overview": views.overview,
+    "🤖 Models": views.models,
     "📊 Results": views.results,
     "🧪 Ablations": views.ablations,
     "🛡️ Detector": detector.detector,

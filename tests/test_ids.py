@@ -116,15 +116,19 @@ def test_dashboard_runs_headless():
     at.run()
     assert not at.exception, at.exception  # the Overview page is the home page
 
-    for page in ("🛡️ Detector",):
-        at.session_state["page"] = page
+    at.session_state["page"] = "🛡️ Detector"   # the five study models by default
+    at.run()
+    assert not at.exception, at.exception
+    assert len(at.metric) >= 3
+    for earlier in ("Earlier four models",):
+        at.session_state["detector_set"] = earlier
         at.run()
-        assert not at.exception, (page, at.exception)
+        assert not at.exception, (earlier, at.exception)
         assert len(at.metric) >= 3
 
 
 @pytest.mark.skipif(not has_models, reason="models not trained")
-@pytest.mark.parametrize("page", ["🏠 Overview", "📊 Results", "🧪 Ablations", "🔬 Bench", "ℹ️ About"])
+@pytest.mark.parametrize("page", ["🏠 Overview", "🤖 Models", "📊 Results", "🧪 Ablations", "🔬 Bench", "ℹ️ About"])
 def test_every_study_page_renders(page):
     from streamlit.testing.v1 import AppTest
 
@@ -135,6 +139,35 @@ def test_every_study_page_renders(page):
 
 
 @pytest.mark.skipif(not has_models, reason="models not trained")
+@pytest.mark.parametrize("model", ["Decision Tree", "Random Forest", "SVM (RBF)", "MLP", "LSTM"])
+def test_each_study_model_runs_in_the_detector(model):
+    from streamlit.testing.v1 import AppTest
+
+    at = AppTest.from_file(str(ROOT / "app" / "streamlit_app.py"), default_timeout=180)
+    at.session_state["page"] = "🛡️ Detector"
+    at.session_state["detector_model"] = model
+    at.run()
+    assert not at.exception, (model, at.exception)
+    assert at.metric[0].value == "500" and any(m.value == model for m in at.metric)
+
+
+def test_study_models_reproduce_the_benchmark_predictions():
+    """The exported models, loaded with plain scikit-learn and Keras, classify the sample file like the benchmark project did."""
+    import sys
+
+    sys.path.insert(0, str(ROOT / "app"))
+    import study_models as SM
+    from ids import config as C
+
+    df = read_traffic(ROOT / "sample_data" / "sample_traffic.csv")
+    truth = df["attack"].map(C.ATTACK_FAMILY).replace({"normal": "Normal"})
+    pre = SM.load_preprocessor()
+    for key, flagged in {"DT": 207, "RF": 161, "SVM": 179, "MLP": 219, "LSTM": 220}.items():
+        out = SM.classify(key, SM.load_model(key), pre, df)
+        assert int(out["alert"].sum()) == flagged, key
+        assert (out["prediction"].values == truth.values).mean() > 0.7, key
+
+
 def test_deep_link_opens_the_requested_page():
     from streamlit.testing.v1 import AppTest
 

@@ -109,6 +109,48 @@ SIZE = {
 }
 SIZE_PERCENT = [10, 25, 50, 100]
 
+# What each model is and what stood out about it in the report (Sections II-H, II-I, III).
+MODEL_NOTES = {
+    "Decision Tree": dict(
+        tagline="One tree. The cheapest to train and to run.",
+        how="A CART tree that splits on the feature and threshold with the largest drop in Gini impurity. Depth and leaf "
+            "size are the main controls on overfitting.",
+        stood_out=["Cheapest model: 0.9 s to train, 0.10 ms per record and 0.06 MB (573 nodes).",
+                   "Lowest ROC-AUC (0.736 macro), as expected from a single tree that outputs only a few distinct scores.",
+                   "Flags the largest share of unseen attack types as attacks (52.7%), but names the right family for only 25.4%."]),
+    "Random Forest": dict(
+        tagline="287 trees voting. Best on validation, last on the test file.",
+        how="An ensemble of trees, each grown on a bootstrap sample and restricted to a random subset of features at every "
+            "split. The predicted class is the one with the highest averaged probability.",
+        stood_out=["Won validation (macro-F1 0.953) and scored lowest on the test file (0.510).",
+                   "Highest ROC-AUC (0.930 macro, 0.962 binary) and lowest false-positive rate (2.8%), but also the lowest "
+                   "attack detection rate (58.9%): a stricter alert rule, not a better detector.",
+                   "Largest model (38 MB, 353,881 nodes) and slowest per record (17.94 ms). R2L recall is 0.02."]),
+    "SVM (RBF)": dict(
+        tagline="RBF kernel on a 29,999-record subsample.",
+        how="A soft-margin support vector machine with the RBF kernel, extended to five classes one-versus-one. Training cost "
+            "grows faster than linearly, so it is fitted on a class-stratified subsample that keeps every R2L and U2R record.",
+        stood_out=["Within 0.03 of the best macro-F1 at 0.34 ms per record and 6.8 s of training.",
+                   "Best U2R F1 of all five (0.45) because its precision is higher (0.54 against 0.24 to 0.29 for the networks).",
+                   "On the binary Normal-vs-Attack task it ties the LSTM (accuracy 0.827)."]),
+    "MLP": dict(
+        tagline="Two hidden layers (165 and 82 units).",
+        how="A feed-forward network with two hidden ReLU layers, dropout after each, and a softmax output over the five "
+            "classes. It is the plain neural baseline.",
+        stood_out=["Highest R2L recall (0.24) and, with the LSTM, the highest U2R recall (0.48).",
+                   "Preferable for resource-constrained use under the report's rule: within 0.01 of the best macro-F1 and "
+                   "faster per record than the LSTM (2.85 ms).",
+                   "Needs 70.2 s of CPU training, about 10 times the SVM."]),
+    "LSTM": dict(
+        tagline="A recurrent cell over a sequence of one time step.",
+        how="A long short-term memory cell followed by dropout, a dense layer, dropout and a softmax output. Each record is "
+            "reshaped to a sequence of one time step with 121 features.",
+        stood_out=["Highest macro-F1 (0.641) and accuracy 0.801, tied with the MLP under the report's 0.01 rule.",
+                   "With one time step it acts as a gated feed-forward layer: NSL-KDD records are independent summaries, so it "
+                   "cannot use temporal structure.",
+                   "Slowest neural model per record (8.73 ms), 78.7 s to train, and the largest seed-to-seed spread (macro-F1 std 0.027)."]),
+}
+
 RESEARCH_QUESTIONS = [
     ("RQ1. Do the deep learning models detect attacks better than the classical models?",
      "Yes on the five-class task with default decision rules, with limits. The MLP and LSTM reach macro-F1 0.631 and "
