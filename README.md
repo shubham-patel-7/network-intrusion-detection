@@ -114,7 +114,20 @@ streamlit run app/streamlit_app.py
 
 Upload a CSV (header optional; either the 41 NSL-KDD feature columns, or a raw 41-43 column NSL-KDD file) and choose the task, model and alert threshold. The app shows how many records are flagged, a table of the most suspicious ones, accuracy and a confusion table if a `label` column is present, and lets you download all predictions. `sample_data/sample_traffic.csv` has 500 `KDDTest+` records to try it with.
 
-The app has two tabs. **Detector** is the CSV tool described above. **Bench** embeds a standalone page (`app/bench.html`) where you pick one of 132 real `KDDTest+` records and see five classifiers label it side by side; the Decision Tree, SVM, MLP and LSTM run in your browser and the Random Forest results are precomputed. The Bench models and figures come from a separate lab report, so they are not the same models as the Detector tab or the results tables in this README.
+The app has six pages, in a dark theme:
+
+| Page | What it shows |
+|---|---|
+| **Overview** | The question, headline numbers, the five findings, the train-versus-test class distribution, the pipeline diagram and the answers to the four research questions |
+| **Results** | Interactive charts of the lab report's results: accuracy, macro-F1 and other metrics with error bars (full test file or the harder KDDTest-21), bootstrap intervals, per-class recall and F1, the accuracy-versus-cost trade-off, and detection of unseen attack types |
+| **Ablations** | Binary task, class imbalance (none, class weights, SMOTE), feature groups and training-set size |
+| **Detector** | The CSV tool described above, using the four models trained in this repository |
+| **Bench** | A standalone page (`app/bench.html`) where you pick one of 132 real `KDDTest+` records and see five classifiers label it side by side; the Decision Tree, SVM, MLP and LSTM run in your browser and the Random Forest results are precomputed |
+| **About** | Method, limitations, future work, authors and references |
+
+**Two studies live in this repository.** The Overview, Results, Ablations and Bench pages present a group lab project (Information Security Lab, MIT Manipal) that compared **Decision Tree, Random Forest, SVM, MLP and LSTM**; its numbers are transcribed from the project's IEEE-format report into `app/study_data.py`, not recomputed by the app (run on 2 CPU cores, scikit-learn 1.9.1, TensorFlow 2.21; five seeds for the main results, one seed for the ablations). The Detector page and the results tables further up this README belong to this repository's own earlier study, which compared **Logistic Regression, Random Forest, XGBoost and a PyTorch MLP** with three seeds. The two sets of models and numbers are different and are labelled as such in the app.
+
+Study authors: Shubham Patel, Vinamra Lilariaa, Tejas Baid and Anushka Chitranshi.
 
 ## Quickstart
 
@@ -144,7 +157,12 @@ src/ids/
   train.py      trains everything for both tasks, saves models + metrics
   predict.py    CSV reader/validator + Detector used by the app
   report.py     figures and tables
-app/streamlit_app.py
+app/streamlit_app.py      page navigation (entry point)
+app/views.py              Overview, Results, Ablations, About pages (Altair charts)
+app/study_data.py         the lab report's tables, transcribed
+app/detector.py           Detector and Bench pages
+app/ui.py                 theme, CSS and chart styling;  app/bench.html: the embedded bench page
+.streamlit/config.toml    dark theme
 tests/test_ids.py         schema, no-unmapped-labels, dataset sizes, unseen-category handling, class weights, MLP learns, metrics, CSV parsing, end-to-end app run
 sample_data/sample_traffic.csv
 results/                  metrics.json, results_tables.md, figures/

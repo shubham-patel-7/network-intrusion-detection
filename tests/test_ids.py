@@ -114,5 +114,52 @@ def test_dashboard_runs_headless():
 
     at = AppTest.from_file(str(ROOT / "app" / "streamlit_app.py"), default_timeout=120)
     at.run()
-    assert not at.exception, at.exception
-    assert len(at.metric) >= 3
+    assert not at.exception, at.exception  # the Overview page is the home page
+
+    for page in ("🛡️ Detector",):
+        at.session_state["page"] = page
+        at.run()
+        assert not at.exception, (page, at.exception)
+        assert len(at.metric) >= 3
+
+
+@pytest.mark.skipif(not has_models, reason="models not trained")
+@pytest.mark.parametrize("page", ["🏠 Overview", "📊 Results", "🧪 Ablations", "🔬 Bench", "ℹ️ About"])
+def test_every_study_page_renders(page):
+    from streamlit.testing.v1 import AppTest
+
+    at = AppTest.from_file(str(ROOT / "app" / "streamlit_app.py"), default_timeout=120)
+    at.session_state["page"] = page
+    at.run()
+    assert not at.exception, (page, at.exception)
+
+
+def test_study_data_is_consistent():
+    """Cross-checks of the transcribed report tables against statements made in the report text."""
+    import sys
+
+    sys.path.insert(0, str(ROOT / "app"))
+    import study_data as S
+
+    assert set(S.MAIN) == set(S.PER_CLASS) == set(S.HARD) == set(S.COST) == set(S.BINARY) == set(S.IMBALANCE) == set(S.MODELS)
+    # the headline ranking quoted in the report
+    mf1 = {m: S.MAIN[m]["mf1"][0] for m in S.MODELS}
+    assert max(mf1, key=mf1.get) == "LSTM" and min(mf1, key=mf1.get) == "Random Forest"
+    assert S.MAIN["LSTM"]["acc"][0] == S.MAIN["MLP"]["acc"][0] == 0.801
+    # R2L recall runs from 0.02 (Random Forest) to 0.24 (MLP); U2R recall 0.09 to 0.48
+    r2l = {m: S.PER_CLASS[m]["R2L"][0] for m in S.MODELS}
+    assert min(r2l.values()) == 0.02 and max(r2l.values()) == 0.24
+    u2r = {m: S.PER_CLASS[m]["U2R"][0] for m in S.MODELS}
+    assert min(u2r.values()) == 0.09 and max(u2r.values()) == 0.48
+    # unseen-type detection runs from 17.2% to 52.7%; validation winner is the test loser
+    assert min(S.HARD[m]["u_det"][0] for m in S.MODELS) == 17.2 and max(S.HARD[m]["u_det"][0] for m in S.MODELS) == 52.7
+    val = {m: S.CONFIG[m][1] for m in S.MODELS}
+    assert max(val, key=val.get) == "Random Forest"
+    # every bootstrap interval (seed 0) contains the seed-0 macro-F1; the class table sizes match
+    for m in S.MODELS:
+        lo, hi = S.CI[m]
+        assert lo < S.SEED0_MF1[m] < hi
+        assert S.SEED0_MF1[m] == S.IMBALANCE[m]["Class weights"][0]  # same run as Table XVII
+        assert set(S.PER_CLASS[m]) == set(S.CLASSES) and len(S.SIZE[m]) == len(S.SIZE_PERCENT)
+    assert sum(v[0] for v in S.DISTRIBUTION.values()) == 125_973 and sum(v[1] for v in S.DISTRIBUTION.values()) == 22_544
+    assert sum(S.UNSEEN_COUNTS.values()) == 3_750
