@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ipynb_checkpoints/
+.DS_Store
+
+# the CICIoT2023 CSV files and the cached samples (registration form, see README)
+data/
+# models trained with run_model.py, and their predictions
+models/
+predictions.csv
+# per-seed test predictions are large; every other result file is kept
+results*/preds_*.npz

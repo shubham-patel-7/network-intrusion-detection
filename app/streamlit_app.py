@@ -1,6 +1,6 @@
-"""Machine learning vs deep learning for network intrusion detection on NSL-KDD.
+"""Machine learning vs deep learning for network intrusion detection on CICIoT2023.
 
-The study results (Overview, Results, Ablations, About), a working detector for CSV files, and an interactive bench.
+The study results (Overview, Models, Results, Ablations, About) and a working detector for CSV files of flows.
 
 Run:  streamlit run app/streamlit_app.py
 """
@@ -8,7 +8,6 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import streamlit as st  # noqa: E402
@@ -26,7 +25,6 @@ PAGES = {
     "📊 Results": views.results,
     "🧪 Ablations": views.ablations,
     "🛡️ Detector": detector.detector,
-    "🔬 Bench": detector.bench,
     "ℹ️ About": views.about,
 }
 

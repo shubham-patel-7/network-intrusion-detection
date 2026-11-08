@@ -2,120 +2,146 @@
  "DT": {
   "config": {
    "max_depth": 15,
-   "min_samples_leaf": 5,
+   "min_samples_leaf": 13,
    "criterion": "entropy"
   },
   "epochs": null,
   "settings_from": "results/best_DT.json (this repository's tuning run)",
-  "train_seconds": 4.5,
+  "train_seconds": 8.3,
   "test": {
-   "acc": 0.7482256919801278,
-   "macro_f1": 0.530530387532121,
-   "det_rate": 0.6940699758435284,
-   "fpr_normal": 0.033261250128720006,
+   "acc": 0.7421536286522149,
+   "macro_f1": 0.7231871888706838,
+   "det_rate": 0.947860007691885,
+   "fpr_normal": 0.3294137131500497,
    "recall": {
-    "Normal": 0.96673874987128,
-    "DoS": 0.7319034852546917,
-    "Probe": 0.7327550598926064,
-    "R2L": 0.08180242634315425,
-    "U2R": 0.14925373134328357
+    "Benign": 0.6705862868499504,
+    "DDoS": 0.669488597097443,
+    "DoS": 0.9088,
+    "Mirai": 0.9966804979253112,
+    "Recon": 0.5650719304115088,
+    "Spoofing": 0.8355400696864111,
+    "Web-based": 0.5700126528890763,
+    "Brute Force": 0.630591054313099
    }
   }
  },
  "RF": {
   "config": {
-   "n_estimators": 287,
-   "max_depth": null,
-   "max_features": "sqrt",
-   "min_samples_leaf": 1
+   "n_estimators": 146,
+   "max_depth": 30,
+   "max_features": "log2",
+   "min_samples_leaf": 2
   },
   "epochs": null,
-  "settings_from": "results/best_RF.json (this repository's tuning run)",
-  "train_seconds": 33.4,
+  "settings_from": "results/best_RF.json (this repository's tuning run); the app ships the first 40 of 146 trees",
+  "train_seconds": 42.4,
   "test": {
-   "acc": 0.743124556422995,
-   "macro_f1": 0.5159789089710378,
-   "det_rate": 0.5925348710356113,
-   "fpr_normal": 0.027803521779425393,
+   "acc": 0.7727144203581526,
+   "macro_f1": 0.7562194477177542,
+   "det_rate": 0.9495082687764409,
+   "fpr_normal": 0.24925472010599536,
    "recall": {
-    "Normal": 0.9721964782205746,
-    "DoS": 0.7599195710455764,
-    "Probe": 0.6435357290375878,
-    "R2L": 0.02703639514731369,
-    "U2R": 0.1044776119402985
+    "Benign": 0.7507452798940046,
+    "DDoS": 0.6729440221147202,
+    "DoS": 0.9096888888888889,
+    "Mirai": 0.9991701244813278,
+    "Recon": 0.6436935429909669,
+    "Spoofing": 0.8475609756097561,
+    "Web-based": 0.6358076760860396,
+    "Brute Force": 0.5994408945686901
    }
   }
  },
  "SVM": {
   "config": {
-   "C": 17.341945099998505,
-   "gamma": 0.8574039690859626
+   "C": 6.813266396704086,
+   "gamma": 0.1559845906376034
   },
   "epochs": null,
   "settings_from": "results/best_SVM.json (this repository's tuning run)",
-  "train_seconds": 19.5,
+  "train_seconds": 410.4,
   "test": {
-   "acc": 0.7620209368346345,
-   "macro_f1": 0.6132492969264117,
-   "det_rate": 0.6441985506117042,
-   "fpr_normal": 0.03140768201009165,
+   "acc": 0.6547832233741753,
+   "macro_f1": 0.6335952909993143,
+   "det_rate": 0.9029448931377397,
+   "fpr_normal": 0.2949652202716131,
    "recall": {
-    "Normal": 0.9685923179899083,
-    "DoS": 0.7722520107238606,
-    "Probe": 0.6237092110698058,
-    "R2L": 0.16568457538994802,
-    "U2R": 0.3582089552238806
+    "Benign": 0.7050347797283869,
+    "DDoS": 0.47183828610919143,
+    "DoS": 0.9888,
+    "Mirai": 0.9968464730290456,
+    "Recon": 0.4817664770826363,
+    "Spoofing": 0.4991289198606272,
+    "Web-based": 0.5025305778152678,
+    "Brute Force": 0.44129392971246006
    }
   }
  },
  "MLP": {
   "config": {
-   "units": 165,
-   "dropout": 0.06,
-   "lr": 0.0012,
+   "units": 208,
+   "dropout": 0.0029006313154597563,
+   "lr": 0.0006756766328842367,
    "batch": 256,
    "clip": 0
   },
-  "epochs": 44,
-  "settings_from": "the report's Table IX",
-  "train_seconds": 559.3,
+  "epochs": 59,
+  "settings_from": "results/best_MLP.json (this repository's tuning run)",
+  "train_seconds": 464.2,
   "test": {
-   "acc": 0.8042494677075941,
-   "macro_f1": 0.6252378047716987,
-   "det_rate": 0.7542273825294163,
-   "fpr_normal": 0.034599938214396046,
+   "acc": 0.7360508953817153,
+   "macro_f1": 0.7179567447554418,
+   "det_rate": 0.950634580517554,
+   "fpr_normal": 0.35624378933421663,
    "recall": {
-    "Normal": 0.965400061785604,
-    "DoS": 0.8257372654155496,
-    "Probe": 0.7732342007434945,
-    "R2L": 0.23986135181975737,
-    "U2R": 0.47761194029850745
+    "Benign": 0.6437562106657834,
+    "DDoS": 0.611782999308915,
+    "DoS": 0.9587555555555556,
+    "Mirai": 0.99850622406639,
+    "Recon": 0.5936768149882904,
+    "Spoofing": 0.8045296167247387,
+    "Web-based": 0.5911008013496415,
+    "Brute Force": 0.5714856230031949
    }
   }
  },
  "LSTM": {
   "config": {
-   "units": 83,
-   "dropout": 0.01,
-   "lr": 0.0064,
-   "batch": 512,
-   "clip": 0
+   "units": 79,
+   "dropout": 0.08316463734514573,
+   "lr": 0.00375628183691923,
+   "batch": 128,
+   "clip": 50
   },
-  "epochs": 39,
-  "settings_from": "the report's Table IX",
-  "train_seconds": 241.0,
+  "epochs": 57,
+  "settings_from": "results/best_LSTM.json (this repository's tuning run)",
+  "train_seconds": 1478.7,
   "test": {
-   "acc": 0.8050922640170334,
-   "macro_f1": 0.6421649423808453,
-   "det_rate": 0.7531364451024702,
-   "fpr_normal": 0.038821954484605084,
+   "acc": 0.7363572101790763,
+   "macro_f1": 0.7191562514960064,
+   "det_rate": 0.9339047305093127,
+   "fpr_normal": 0.2873468035773435,
    "recall": {
-    "Normal": 0.9611780455153949,
-    "DoS": 0.8345844504021448,
-    "Probe": 0.7034283353985956,
-    "R2L": 0.2932409012131716,
-    "U2R": 0.6119402985074627
+    "Benign": 0.7126531964226565,
+    "DDoS": 0.5950241879751209,
+    "DoS": 0.9639111111111112,
+    "Mirai": 0.9980082987551867,
+    "Recon": 0.6100702576112412,
+    "Spoofing": 0.7390243902439024,
+    "Web-based": 0.5723323492197385,
+    "Brute Force": 0.5854632587859425
    }
   }
- }
+ },
+ "classes": [
+  "Benign",
+  "DDoS",
+  "DoS",
+  "Mirai",
+  "Recon",
+  "Spoofing",
+  "Web-based",
+  "Brute Force"
+ ],
+ "dataset": "ciciot2023"
 }

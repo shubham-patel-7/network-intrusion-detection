@@ -1,208 +1,296 @@
-"""Results of the lab report "Deep Learning vs. Machine Learning for Network Intrusion Detection: A Comparative
-Study on NSL-KDD" (Information Security Lab, MIT Manipal), transcribed from its tables.
+"""Results of the five-model benchmark on CICIoT2023, loaded from app/data/summary.json.
 
-All numbers come from the report's own run (2 CPU cores, scikit-learn 1.9.1, TensorFlow 2.21, five seeds for the
-main results, one seed for the ablations). They are not recomputed by this app.
+The file is written by the benchmark project (`python -m idsbench.report`). Nothing in this module is typed in by hand
+except the descriptions of what each model is: every number, and every sentence about the numbers, is computed from the
+summary, so the app cannot drift away from the results. Set IDS_APP_SUMMARY to read a different summary file.
 """
+import json
+import os
+from pathlib import Path
 
+SUMMARY = Path(os.environ.get("IDS_APP_SUMMARY", Path(__file__).resolve().parent / "data" / "summary.json"))
+_S = json.loads(SUMMARY.read_text(encoding="utf-8"))
+META = _S["meta"]
+
+CODES = ["DT", "RF", "SVM", "MLP", "LSTM"]
 MODELS = ["Decision Tree", "Random Forest", "SVM (RBF)", "MLP", "LSTM"]
+CODE = dict(zip(MODELS, CODES))
 FAMILY = {"Decision Tree": "Classical", "Random Forest": "Classical", "SVM (RBF)": "Classical",
           "MLP": "Deep learning", "LSTM": "Deep learning"}
-CLASSES = ["Normal", "DoS", "Probe", "R2L", "U2R"]
 # Colours that read on a dark background; blue/indigo = classical, amber/orange = deep learning.
 COLORS = {"Decision Tree": "#93c5fd", "Random Forest": "#3b82f6", "SVM (RBF)": "#818cf8",
           "MLP": "#fbbf24", "LSTM": "#f97316"}
+CLASSES = META["classes"]
+RARE = META["rare_classes"]  # names of the rare classes
+DATASET = META["dataset"]
+IS_CIC = DATASET == "ciciot2023"
+DATASET_NAME = "CICIoT2023"
 
-# Table II: five-class distribution (records).
-DISTRIBUTION = {"Normal": (67343, 9711), "DoS": (45927, 7460), "Probe": (11656, 2421),
-                "R2L": (995, 2885), "U2R": (52, 67)}
 
-# Table IX: frozen configuration and validation macro-F1.
-CONFIG = {
-    "Decision Tree": ("depth 15, min leaf 5, entropy", 0.908),
-    "Random Forest": ("287 trees, unlimited depth, sqrt features, min leaf 1", 0.953),
-    "SVM (RBF)": ("C = 17.3, gamma = 0.857, 29,999-record subsample", 0.858),
-    "MLP": ("165 and 82 units, dropout 0.06, learning rate 0.0012, batch 256, 44 epochs", 0.890),
-    "LSTM": ("83 units then 41, dropout 0.01, learning rate 0.0064, batch 512, 39 epochs", 0.891),
-}
+def _m(m):
+    return _S[CODE[m]]
 
-# Table XI: KDDTest+ (22,544 records), mean and standard deviation over five seeds. Rates are in percent.
-MAIN = {
-    "Decision Tree": dict(acc=(0.751, 0.003), mf1=(0.530, 0.002), det=(69.6, 0.4), fpr=(3.4, 0.1), auc=(0.736, 0.001), aucb=(0.836, 0.002)),
-    "Random Forest": dict(acc=(0.743, 0.001), mf1=(0.510, 0.004), det=(58.9, 0.2), fpr=(2.8, 0.0), auc=(0.930, 0.004), aucb=(0.962, 0.001)),
-    "SVM (RBF)": dict(acc=(0.761, 0.006), mf1=(0.612, 0.003), det=(65.0, 1.1), fpr=(3.4, 0.4), auc=(0.900, 0.005), aucb=(0.948, 0.003)),
-    "MLP": dict(acc=(0.801, 0.010), mf1=(0.631, 0.014), det=(73.6, 2.6), fpr=(3.4, 0.1), auc=(0.916, 0.012), aucb=(0.925, 0.003)),
-    "LSTM": dict(acc=(0.801, 0.011), mf1=(0.641, 0.027), det=(71.7, 2.7), fpr=(3.7, 0.2), auc=(0.916, 0.014), aucb=(0.929, 0.018)),
-}
 
-# Table XII: (recall, F1) per class, mean over five seeds.
-PER_CLASS = {
-    "Decision Tree": {"Normal": (0.97, 0.82), "DoS": (0.74, 0.84), "Probe": (0.73, 0.64), "R2L": (0.08, 0.15), "U2R": (0.15, 0.21)},
-    "Random Forest": {"Normal": (0.97, 0.77), "DoS": (0.76, 0.85), "Probe": (0.63, 0.72), "R2L": (0.02, 0.05), "U2R": (0.09, 0.16)},
-    "SVM (RBF)": {"Normal": (0.97, 0.80), "DoS": (0.78, 0.86), "Probe": (0.62, 0.70), "R2L": (0.16, 0.26), "U2R": (0.39, 0.45)},
-    "MLP": {"Normal": (0.97, 0.83), "DoS": (0.83, 0.89), "Probe": (0.71, 0.76), "R2L": (0.24, 0.35), "U2R": (0.48, 0.31)},
-    "LSTM": {"Normal": (0.96, 0.82), "DoS": (0.83, 0.89), "Probe": (0.75, 0.78), "R2L": (0.23, 0.37), "U2R": (0.48, 0.34)},
-}
+def _pct(t):
+    return (t[0] * 100, t[1] * 100)
 
-# 95% bootstrap interval for macro-F1 (1,000 resamples of the test records, seed 0).
-CI = {"Decision Tree": (0.506, 0.553), "Random Forest": (0.493, 0.539), "SVM (RBF)": (0.589, 0.637),
-      "MLP": (0.630, 0.668), "LSTM": (0.647, 0.691)}
 
-# Macro-F1 of the seed-0 run, the run the intervals above and the ablations refer to (Table XVII, class weights).
-SEED0_MF1 = {"Decision Tree": 0.531, "Random Forest": 0.516, "SVM (RBF)": 0.613, "MLP": 0.649, "LSTM": 0.670}
+# class distribution of the sample the models were trained and tested on
+DISTRIBUTION = {c: (META["train_counts"][i], META["test_counts"][i]) for i, c in enumerate(CLASSES)}
 
-# Table XIII: harder KDDTest-21 (11,850 records) and the 3,750 records of the 17 attack types absent from training.
-HARD = {
-    "Decision Tree": dict(t21_acc=(0.544, 0.006), t21_mf1=(0.442, 0.002), t21_det=(60.1, 0.5), u_det=(52.7, 0.4), u_acc=(25.4, 1.5), u_rec=dict(DoS=0.11, Probe=0.57, R2L=0.01, U2R=0.17)),
-    "Random Forest": dict(t21_acc=(0.513, 0.002), t21_mf1=(0.412, 0.005), t21_det=(45.6, 0.3), u_det=(17.2, 0.6), u_acc=(12.1, 0.6), u_rec=dict(DoS=0.02, Probe=0.32, R2L=0.00, U2R=0.11)),
-    "SVM (RBF)": dict(t21_acc=(0.552, 0.011), t21_mf1=(0.520, 0.004), t21_det=(53.7, 1.5), u_det=(30.6, 3.6), u_acc=(18.3, 3.4), u_rec=dict(DoS=0.10, Probe=0.38, R2L=0.00, U2R=0.36)),
-    "MLP": dict(t21_acc=(0.623, 0.019), t21_mf1=(0.547, 0.015), t21_det=(65.1, 3.5), u_det=(48.5, 5.0), u_acc=(31.2, 5.8), u_rec=dict(DoS=0.30, Probe=0.49, R2L=0.01, U2R=0.45)),
-    "LSTM": dict(t21_acc=(0.623, 0.020), t21_mf1=(0.555, 0.029), t21_det=(62.5, 3.5), u_det=(43.5, 7.5), u_acc=(33.4, 6.2), u_rec=dict(DoS=0.29, Probe=0.56, R2L=0.01, U2R=0.46)),
-}
-UNSEEN_COUNTS = {"DoS": 1719, "Probe": 1315, "R2L": 686, "U2R": 30}
+# main results on the held-out test split: mean and standard deviation over the seeds (rates in percent)
+MAIN = {m: dict(acc=tuple(_m(m)["acc"]), mf1=tuple(_m(m)["mf1"]), det=_pct(_m(m)["det"]), fpr=_pct(_m(m)["fpr"]),
+                auc=tuple(_m(m)["auc"]), aucb=tuple(_m(m)["aucb"])) for m in MODELS}
+PER_CLASS = {m: {c: (_m(m)["rec"][i], _m(m)["f1"][i]) for i, c in enumerate(CLASSES)} for m in MODELS}
+CI = {m: tuple(_m(m)["ci"]) for m in MODELS}
+SEED0_MF1 = {m: _m(m)["seed0_mf1"] for m in MODELS}
+COST = {m: dict(train=tuple(_m(m)["train"]), epochs=_m(m)["epochs"], batch=tuple(_m(m)["batch"]), lat=_m(m)["lat"][0],
+                lat95=_m(m)["lat95"][0], size=_m(m)["size"][0],
+                counts=", ".join(f"{v:,} {k.replace('_', ' ')}" for k, v in _m(m)["counts"].items())) for m in MODELS}
 
-# Table XIV: cost on 2 CPU cores, mean and standard deviation over five runs.
-COST = {
-    "Decision Tree": dict(train=(0.9, 0.0), epochs=None, batch=(0.0036, 0.0002), lat=0.10, lat95=0.15, size=0.06, counts="573 nodes"),
-    "Random Forest": dict(train=(11.3, 0.2), epochs=None, batch=(0.28, 0.02), lat=17.94, lat95=25.41, size=38.03, counts="287 trees, 353,881 nodes"),
-    "SVM (RBF)": dict(train=(6.8, 0.3), epochs=None, batch=(3.97, 0.11), lat=0.34, lat95=0.46, size=1.79, counts="1,726 support vectors"),
-    "MLP": dict(train=(70.2, 2.2), epochs=44, batch=(0.13, 0.01), lat=2.85, lat95=4.06, size=0.44, counts="34,157 parameters"),
-    "LSTM": dict(train=(78.7, 1.6), epochs=39, batch=(0.31, 0.07), lat=8.73, lat95=12.18, size=0.90, counts="71,714 parameters"),
-}
 
-# Table XVI: binary task (Normal vs Attack), one seed, threshold 0.5.
-BINARY = {
-    "Decision Tree": dict(acc=0.793, f1=0.784, det=65.9, fpr=3.0, auc=0.835, unseen=36.4),
-    "Random Forest": dict(acc=0.777, f1=0.762, det=62.8, fpr=2.7, auc=0.961, unseen=28.3),
-    "SVM (RBF)": dict(acc=0.827, f1=0.825, det=71.8, fpr=3.0, auc=0.926, unseen=58.8),
-    "MLP": dict(acc=0.815, f1=0.818, det=73.0, fpr=7.3, auc=0.886, unseen=47.4),
-    "LSTM": dict(acc=0.827, f1=0.828, det=73.3, fpr=4.9, auc=0.921, unseen=46.3),
-}
+def _config_text(cfg):
+    return ", ".join(f"{k.replace('_', ' ')} {v:.4g}" if isinstance(v, float) else f"{k.replace('_', ' ')} {v}"
+                     for k, v in cfg.items())
 
-# Table XVII: macro-F1 under three imbalance strategies, with R2L and U2R F1: (macro-F1, R2L F1, U2R F1).
-IMBALANCE = {
-    "Decision Tree": {"No correction": (0.545, 0.16, 0.21), "Class weights": (0.531, 0.14, 0.22), "SMOTE": (0.554, 0.04, 0.41)},
-    "Random Forest": {"No correction": (0.498, 0.08, 0.08), "Class weights": (0.516, 0.05, 0.18), "SMOTE": (0.538, 0.11, 0.24)},
-    "SVM (RBF)": {"No correction": (0.605, 0.18, 0.48), "Class weights": (0.613, 0.27, 0.44), "SMOTE": (0.621, 0.26, 0.48)},
-    "MLP": {"No correction": (0.674, 0.36, 0.55), "Class weights": (0.649, 0.37, 0.34), "SMOTE": (0.666, 0.33, 0.55)},
-    "LSTM": {"No correction": (0.662, 0.36, 0.48), "Class weights": (0.670, 0.39, 0.46), "SMOTE": (0.655, 0.36, 0.51)},
-}
 
-# Table XVIII: feature ablation: (inputs, macro-F1, accuracy, unseen-type detection %). Random Forest and LSTM only.
-FEATURES = {
-    "Random Forest": {
-        "All features": (121, 0.516, 0.743, 18.1), "Without basic connection": (31, 0.481, 0.717, 14.3),
-        "Without content": (109, 0.562, 0.760, 22.3), "Without time-based traffic": (112, 0.495, 0.732, 17.4),
-        "Without host-based traffic": (111, 0.613, 0.770, 45.9), "Top 20 by mutual information": (20, 0.482, 0.753, 25.1),
-        "Top 40 by mutual information": (40, 0.485, 0.740, 16.5)},
-    "LSTM": {
-        "All features": (121, 0.670, 0.803, 44.9), "Without basic connection": (31, 0.526, 0.738, 32.7),
-        "Without content": (109, 0.644, 0.789, 31.8), "Without time-based traffic": (112, 0.591, 0.743, 33.8),
-        "Without host-based traffic": (111, 0.612, 0.818, 72.3), "Top 20 by mutual information": (20, 0.559, 0.785, 46.3),
-        "Top 40 by mutual information": (40, 0.561, 0.759, 46.7)},
-}
+CONFIG = {m: (_config_text(_m(m)["cfg"]), _m(m).get("val_macro_f1")) for m in MODELS}
 
-# Table XIX: macro-F1 by training-set size (share of KDDTrain+: 12,597 / 31,493 / 62,986 / 125,973 records).
-SIZE = {
-    "Decision Tree": [0.517, 0.565, 0.578, 0.531], "Random Forest": [0.515, 0.507, 0.529, 0.516],
-    "SVM (RBF)": [0.535, 0.586, 0.617, 0.613], "MLP": [0.620, 0.624, 0.618, 0.649], "LSTM": [0.618, 0.644, 0.602, 0.670],
-}
+A = _S.get("ablate", {})
+
+
+def _rare_idx():
+    return [CLASSES.index(r) for r in RARE]
+
+
+# binary task (benign versus attack)
+BINARY = {}
+for _m_ in MODELS:
+    _b = A.get("task", {}).get(CODE[_m_])
+    if _b:
+        BINARY[_m_] = dict(acc=_b["full"]["acc"], f1=_b["full"]["f1_attack"], det=_b["full"]["det_rate"] * 100,
+                           fpr=_b["full"]["fpr"] * 100, auc=_b["full"]["auc"])
+        if "unseen_det_rate" in _b:
+            BINARY[_m_]["unseen"] = _b["unseen_det_rate"] * 100
+
+# imbalance handling: (macro-F1, F1 of the first rare class, F1 of the second rare class)
+IMBALANCE = {}
+for _m_ in MODELS:
+    _row = {}
+    for _key, _label in (("none", "No correction"), ("smote", "SMOTE")):
+        _e = A.get("imbalance", {}).get(f"{CODE[_m_]}|{_key}")
+        if _e:
+            _row[_label] = (_e["full"]["macro_f1"], *[_e["full"]["f1"][i] for i in _rare_idx()])
+    if _row:
+        _row["Class weights"] = (SEED0_MF1[_m_], *[_m(_m_)["seed0_f1"][i] for i in _rare_idx()])  # the main run, seed 0
+        IMBALANCE[_m_] = {k: _row[k] for k in ("No correction", "Class weights", "SMOTE") if k in _row}
+
+# feature ablation (best classical and best neural model on validation): (inputs, macro-F1, accuracy, unseen detection %)
+FEATURES = {}
+_feat = A.get("features")
+if _feat:
+    for _code in _feat.get("models", []):
+        _name = MODELS[CODES.index(_code)]
+        _rows = {"All features": (META["n_features"], SEED0_MF1[_name], _m(_name)["seed0_acc"], None)}
+        for _key, _v in _feat.items():
+            if _key.startswith(_code + "|") and _v["n_features"] < META["n_features"]:  # top-40 of 39 features is "all"
+                _var = _key.split("|", 1)[1]
+                _label = ("Without " + _var[5:].replace("_", " ") if _var.startswith("drop_")
+                          else f"Top {_var[3:5]} by mutual information")
+                _un = _v.get("unseen", {}).get("det_rate")
+                _rows[_label] = (_v["n_features"], _v["full"]["macro_f1"], _v["full"]["acc"], None if _un is None else _un * 100)
+        FEATURES[_name] = _rows
+
+# training-set size: macro-F1 at 10%, 25%, 50% and 100% of the training sample
 SIZE_PERCENT = [10, 25, 50, 100]
+SIZE = {}
+for _m_ in MODELS:
+    _vals = [A.get("size", {}).get(f"{CODE[_m_]}|{f}", {}).get("full", {}).get("macro_f1") for f in (0.1, 0.25, 0.5)]
+    if all(v is not None for v in _vals):
+        SIZE[_m_] = _vals + [SEED0_MF1[_m_]]
 
-# What each model is and what stood out about it in the report (Sections II-H, II-I, III).
-MODEL_NOTES = {
-    "Decision Tree": dict(
-        tagline="One tree. The cheapest to train and to run.",
-        how="A CART tree that splits on the feature and threshold with the largest drop in Gini impurity. Depth and leaf "
-            "size are the main controls on overfitting.",
-        stood_out=["Cheapest model: 0.9 s to train, 0.10 ms per record and 0.06 MB (573 nodes).",
-                   "Lowest ROC-AUC (0.736 macro), as expected from a single tree that outputs only a few distinct scores.",
-                   "Flags the largest share of unseen attack types as attacks (52.7%), but names the right family for only 25.4%."]),
-    "Random Forest": dict(
-        tagline="287 trees voting. Best on validation, last on the test file.",
-        how="An ensemble of trees, each grown on a bootstrap sample and restricted to a random subset of features at every "
-            "split. The predicted class is the one with the highest averaged probability.",
-        stood_out=["Won validation (macro-F1 0.953) and scored lowest on the test file (0.510).",
-                   "Highest ROC-AUC (0.930 macro, 0.962 binary) and lowest false-positive rate (2.8%), but also the lowest "
-                   "attack detection rate (58.9%): a stricter alert rule, not a better detector.",
-                   "Largest model (38 MB, 353,881 nodes) and slowest per record (17.94 ms). R2L recall is 0.02."]),
-    "SVM (RBF)": dict(
-        tagline="RBF kernel on a 29,999-record subsample.",
-        how="A soft-margin support vector machine with the RBF kernel, extended to five classes one-versus-one. Training cost "
-            "grows faster than linearly, so it is fitted on a class-stratified subsample that keeps every R2L and U2R record.",
-        stood_out=["Within 0.03 of the best macro-F1 at 0.34 ms per record and 6.8 s of training.",
-                   "Best U2R F1 of all five (0.45) because its precision is higher (0.54 against 0.24 to 0.29 for the networks).",
-                   "On the binary Normal-vs-Attack task it ties the LSTM (accuracy 0.827)."]),
-    "MLP": dict(
-        tagline="Two hidden layers (165 and 82 units).",
-        how="A feed-forward network with two hidden ReLU layers, dropout after each, and a softmax output over the five "
-            "classes. It is the plain neural baseline.",
-        stood_out=["Highest R2L recall (0.24) and, with the LSTM, the highest U2R recall (0.48).",
-                   "Preferable for resource-constrained use under the report's rule: within 0.01 of the best macro-F1 and "
-                   "faster per record than the LSTM (2.85 ms).",
-                   "Needs 70.2 s of CPU training, about 10 times the SVM."]),
-    "LSTM": dict(
-        tagline="A recurrent cell over a sequence of one time step.",
-        how="A long short-term memory cell followed by dropout, a dense layer, dropout and a softmax output. Each record is "
-            "reshaped to a sequence of one time step with 121 features.",
-        stood_out=["Highest macro-F1 (0.641) and accuracy 0.801, tied with the MLP under the report's 0.01 rule.",
-                   "With one time step it acts as a gated feed-forward layer: NSL-KDD records are independent summaries, so it "
-                   "cannot use temporal structure.",
-                   "Slowest neural model per record (8.73 ms), 78.7 s to train, and the largest seed-to-seed spread (macro-F1 std 0.027)."]),
+HAS_UNSEEN = bool(META.get("n_unseen"))
+
+# held-out attack-type experiment (optional file next to the summary): seven attack types removed from training
+HOLDOUT_SUMMARY = SUMMARY.with_name("summary_holdout.json")
+UNSEEN, HOLDOUT_TYPES, HOLDOUT_META = {}, [], {}
+if HOLDOUT_SUMMARY.exists():
+    _H = json.loads(HOLDOUT_SUMMARY.read_text(encoding="utf-8"))
+    HOLDOUT_META = _H["meta"]
+    HOLDOUT_TYPES = HOLDOUT_META["data_info"]["holdout"]
+    for _m_ in MODELS:
+        _h = _H[CODE[_m_]]
+        UNSEEN[_m_] = dict(mf1=_h["mf1"][0], seen_mf1=_h["s_mf1"][0], det=_h["u_det"][0] * 100, acc=_h["u_acc"][0] * 100,
+                           recall=_h["u_recall"])
+MCNEMAR = _S.get("mcnemar", {})
+RQ4 = _S.get("rq4", {})
+
+
+# ---------------------------------------------------------------- what each model is (dataset independent)
+HOW = {
+    "Decision Tree": "A CART tree that splits on the feature and threshold with the largest drop in impurity. Depth and leaf "
+                     "size are the main controls on overfitting.",
+    "Random Forest": "An ensemble of trees, each grown on a bootstrap sample and restricted to a random subset of features at "
+                     "every split. The predicted class is the one with the highest averaged probability.",
+    "SVM (RBF)": "A soft-margin support vector machine with the RBF kernel, extended to several classes one-versus-one. Training "
+                 "cost grows faster than linearly, so it is fitted on a class-stratified subsample that keeps every record of "
+                 "the rare classes.",
+    "MLP": "A feed-forward network with two hidden ReLU layers, dropout after each, and a softmax output over the classes. "
+           "It is the plain neural baseline.",
+    "LSTM": "A long short-term memory cell followed by dropout, a dense layer, dropout and a softmax output. Each flow is "
+            "reshaped to a sequence of one time step, so the cell acts as a gated feed-forward layer.",
+}
+TAGLINE = {
+    "Decision Tree": "One tree. The cheapest to train and to run.",
+    "Random Forest": "Many trees voting together.",
+    "SVM (RBF)": "A curved decision boundary on a stratified subsample.",
+    "MLP": "Two hidden layers.",
+    "LSTM": "A recurrent cell over a sequence of one time step.",
 }
 
-RESEARCH_QUESTIONS = [
-    ("RQ1. Do the deep learning models detect attacks better than the classical models?",
-     "Yes on the five-class task with default decision rules, with limits. The MLP and LSTM reach macro-F1 0.631 and "
-     "0.641 and accuracy 0.801, against 0.510 to 0.612 and 0.743 to 0.761 for the classical models. The gain comes from "
-     "DoS, Probe, R2L and U2R, not from Normal traffic. It did not hold on the binary task, where the SVM ties the LSTM, "
-     "and not on ROC-AUC, where the Random Forest is highest."),
-    ("RQ2. What training and inference cost does any accuracy gain carry?",
-     "Mostly training time. On 2 CPU cores the neural networks need 70 to 79 s against 0.9 to 11.3 s for the classical "
-     "models, about 10 times the SVM and 80 times the Decision Tree. At inference they are still fast in absolute terms "
-     "(2.85 ms per record for the MLP, 8.73 ms for the LSTM) and small. The Random Forest is both the slowest per record "
-     "(17.9 ms) and the largest model (38 MB). GPU training time was not measured."),
-    ("RQ3. How well are attack types absent from training detected?",
-     "Poorly, and no family is reliable. The models flag 17% (Random Forest) to 53% (Decision Tree) of the 3,750 unseen "
-     "records as attacks. The neural networks assign the correct family most often (31% to 33%). Unseen R2L records "
-     "were essentially never recognised."),
-    ("RQ4. Which approach suits a resource-constrained deployment, and which suits an accuracy-first one?",
-     "By the rule fixed before any result was seen, the MLP is preferable for resource-constrained use (within 0.01 of "
-     "the best macro-F1 and faster per record than the LSTM), and the MLP and LSTM tie for accuracy-first use. The "
-     "MLP-versus-LSTM margin (0.0099) is close to the 0.01 threshold, so this is sensitive. A stricter budget could "
-     "reasonably accept the SVM, which gives up 0.028 of macro-F1 for 0.34 ms per record and 6.8 s of training."),
-]
 
-FINDINGS = [
-    ("Neural networks lead, at a price",
-     "MLP and LSTM reach macro-F1 0.631 and 0.641 against 0.510 to 0.612, but need 70 to 79 s of CPU training against "
-     "0.9 to 11.3 s."),
-    ("Rare attacks decide the ranking",
-     "All five models do well on Normal, DoS and Probe. R2L recall runs from 0.02 to 0.24, and no model detects R2L well."),
-    ("Validation scores mislead",
-     "The Random Forest won validation (0.953 macro-F1) and ranked last on the test file (0.510), because the test "
-     "file holds 17 attack types never seen in training."),
-    ("Unseen attacks are mostly missed",
-     "Only 17% to 53% of the 3,750 unseen-type records were even flagged as attacks, whichever model family was used."),
-    ("Accuracy alone hides the problem",
-     "Normal and DoS are 76% of the test file, so accuracy of 0.74 to 0.80 still leaves 26% to 41% of attacks undetected."),
-]
+# ---------------------------------------------------------------- sentences computed from the numbers
+def _rank(key, idx=0, reverse=True):
+    return sorted(MODELS, key=lambda m: MAIN[m][key][idx], reverse=reverse)
+
+
+def _best_of(models, key="mf1"):
+    return max(models, key=lambda m: MAIN[m][key][0])
+
+
+CLASSICAL = [m for m in MODELS if FAMILY[m] == "Classical"]
+NEURAL = [m for m in MODELS if FAMILY[m] != "Classical"]
+BEST = _rank("mf1")[0]
+WORST = _rank("mf1")[-1]
+
+
+def _rare_recall(m):
+    return [PER_CLASS[m][r][0] for r in RARE]
+
+
+def _hardest_class():
+    mean_f1 = {c: sum(PER_CLASS[m][c][1] for m in MODELS) / len(MODELS) for c in CLASSES}
+    return min(mean_f1, key=mean_f1.get), mean_f1
+
+
+def _significant(a, b):
+    """Holm-adjusted McNemar p-value of two models on seed 0 (order of the pair does not matter)."""
+    e = MCNEMAR.get(f"{CODE[a]}|{CODE[b]}") or MCNEMAR.get(f"{CODE[b]}|{CODE[a]}")
+    return None if not e else e["p_holm"]
+
+
+def _findings():
+    out = []
+    srt = _rank("mf1")
+    out.append((f"{BEST} leads on macro-F1",
+                f"{BEST} scores macro-F1 {MAIN[BEST]['mf1'][0]:.3f}, ahead of {srt[1]} ({MAIN[srt[1]]['mf1'][0]:.3f}); "
+                f"the lowest is {WORST} ({MAIN[WORST]['mf1'][0]:.3f})."))
+    lows = sorted(((m, min(_rare_recall(m))) for m in MODELS), key=lambda t: t[1])
+    out.append((f"Rare classes are the hard part",
+                f"Recall on {' and '.join(RARE)} ranges from {lows[0][1]:.2f} ({lows[0][0]}) to {lows[-1][1]:.2f} "
+                f"({lows[-1][0]}) at its worst, while the large classes are mostly handled well."))
+    t = {m: COST[m]["train"][0] for m in MODELS}
+    fast, slow = min(t, key=t.get), max(t, key=t.get)
+    out.append(("Cost differs by orders of magnitude",
+                f"Training takes {t[fast]:.1f} s for {fast} and {t[slow]:.0f} s for {slow}; per-record latency runs from "
+                f"{min(COST[m]['lat'] for m in MODELS):.2f} to {max(COST[m]['lat'] for m in MODELS):.2f} ms."))
+    gaps = {m: (CONFIG[m][1] - MAIN[m]["mf1"][0]) for m in MODELS if CONFIG[m][1] is not None}
+    if gaps:
+        g = max(gaps, key=gaps.get)
+        out.append(("Validation overstates test scores",
+                    f"Validation macro-F1 is higher than test macro-F1 for {sum(v > 0 for v in gaps.values())} of 5 models, by up "
+                    f"to {gaps[g]:.3f} ({g})."))
+    acc = [MAIN[m]["acc"][0] for m in MODELS]
+    mf = [MAIN[m]["mf1"][0] for m in MODELS]
+    out.append(("Accuracy and macro-F1 tell different stories",
+                f"Accuracy ranges {min(acc):.3f} to {max(acc):.3f} while macro-F1 ranges {min(mf):.3f} to {max(mf):.3f}: macro-F1 "
+                f"counts every class equally, so a model cannot hide a weak rare class behind the large ones."))
+    return out
+
+
+FINDINGS = _findings()
+
+
+def _research_questions():
+    qs = []
+    bc, bn = _best_of(CLASSICAL), _best_of(NEURAL)
+    d = MAIN[bn]["mf1"][0] - MAIN[bc]["mf1"][0]
+    p = _significant(bc, bn)
+    lead = bn if d > 0 else bc
+    if abs(d) < 0.01:  # the study's rule: a macro-F1 gap below 0.01 is a practical tie, whatever the p-value
+        verdict = f"differ by only {abs(d):.3f}, below the 0.01 margin the study treats as a practical tie"
+    else:
+        sig = (", a difference that is statistically significant after correction" if p is not None and p < 0.05
+               else ", not a statistically clear difference" if p is not None else "")
+        verdict = f"differ by {abs(d):.3f} in favour of {lead}{sig}"
+    qs.append(("Q1. Do the deep learning models detect attacks better than the classical ones?",
+               f"The best neural model ({bn}, macro-F1 {MAIN[bn]['mf1'][0]:.3f}) and the best classical model ({bc}, "
+               f"{MAIN[bc]['mf1'][0]:.3f}) {verdict}. The overall best is {BEST}. Accuracy: {bn} {MAIN[bn]['acc'][0]:.3f} "
+               f"against {bc} {MAIN[bc]['acc'][0]:.3f}."))
+    ct = {m: COST[m]["train"][0] for m in MODELS}
+    qs.append(("Q2. What does any gain cost?",
+               f"Training time: classical models {min(ct[m] for m in CLASSICAL):.1f} to {max(ct[m] for m in CLASSICAL):.1f} s, "
+               f"neural models {min(ct[m] for m in NEURAL):.0f} to {max(ct[m] for m in NEURAL):.0f} s. Per-record latency: "
+               f"{min(COST[m]['lat'] for m in MODELS):.2f} ms ({min(MODELS, key=lambda m: COST[m]['lat'])}) to "
+               f"{max(COST[m]['lat'] for m in MODELS):.2f} ms ({max(MODELS, key=lambda m: COST[m]['lat'])}); the largest model is "
+               f"{max(MODELS, key=lambda m: COST[m]['size'])} at {max(COST[m]['size'] for m in MODELS):.1f} MB. Timings are CPU-only."))
+    hardest, mean_f1 = _hardest_class()
+    qs.append(("Q3. Which classes are hardest to detect?",
+               f"The hardest class on average is {hardest} (mean F1 {mean_f1[hardest]:.2f}). The rare classes {' and '.join(RARE)} "
+               f"reach recall of " + "; ".join(f"{m} {min(_rare_recall(m)):.2f}-{max(_rare_recall(m)):.2f}" for m in MODELS) + "."))
+    if RQ4:
+        ties = RQ4.get("practical_ties") or []
+        cons = RQ4.get("resource_constrained") or []
+        af = RQ4.get("accuracy_first")
+        qs.append(("Q4. Which model suits a resource-constrained deployment, and which an accuracy-first one?",
+                   f"The best macro-F1 is {RQ4['best']}'s. Models within 0.01 of it (a practical tie): " +
+                   (", ".join(ties) if ties else "none") + ". Of those, the ones that are also faster per record: " +
+                   (", ".join(cons) if cons else "none") + ". Accuracy-first choice (best by more than 0.01): " +
+                   (af if af else "no model leads by that margin") + "."))
+    return qs
+
+
+RESEARCH_QUESTIONS = _research_questions()
+
+
+def _stood_out(m):
+    out = []
+    srt = _rank("mf1")
+    out.append(f"Ranks {srt.index(m) + 1} of 5 on macro-F1 ({MAIN[m]['mf1'][0]:.3f}) and {_rank('acc').index(m) + 1} of 5 on "
+               f"accuracy ({MAIN[m]['acc'][0]:.3f}).")
+    cls = PER_CLASS[m]
+    best_c, worst_c = max(CLASSES, key=lambda c: cls[c][1]), min(CLASSES, key=lambda c: cls[c][1])
+    out.append(f"Best class: {best_c} (F1 {cls[best_c][1]:.2f}); weakest: {worst_c} (F1 {cls[worst_c][1]:.2f}, recall {cls[worst_c][0]:.2f}).")
+    c = COST[m]
+    tr, lat = sorted(MODELS, key=lambda x: COST[x]["train"][0]).index(m) + 1, sorted(MODELS, key=lambda x: COST[x]["lat"]).index(m) + 1
+    out.append(f"Cost: {c['train'][0]:.1f} s to train (rank {tr} of 5 from fastest), {c['lat']:.2f} ms per record (rank {lat}), "
+               f"{c['size']:.2f} MB.")
+    return out
+
+
+MODEL_NOTES = {m: dict(tagline=TAGLINE[m], how=HOW[m], stood_out=_stood_out(m)) for m in MODELS}
 
 LIMITATIONS = [
-    "NSL-KDD is derived from traffic recorded in 1998; results describe offline classification of pre-extracted "
-    "connection features, not modern networks, raw packets or encrypted traffic.",
-    "Validation did not predict test performance (Random Forest: best validation score, lowest test score). A validation "
-    "split that holds out attack types would give a more honest selection signal.",
-    "Ablations use one seed and frozen hyperparameters; differences below the seed-to-seed spread are not interpreted.",
-    "U2R has only 67 test records, so its scores move by 1.5 percentage points of recall per record.",
-    "The LSTM sees each record as a sequence of one time step, so it is a gated feed-forward layer and not a true "
-    "sequence model.",
-    "Costs were measured on one 2-core CPU session without a GPU; absolute times will differ on other hardware.",
-    "No decision thresholds were tuned, and the optional CICIDS2017 replication was not run.",
+    f"CICIoT2023 comes from a laboratory IoT testbed with simulated attacks, so results describe offline classification of "
+    f"pre-extracted flow features, not a live network.",
+    f"The models were trained and tested on a sample of at most {META.get('sample_cap_per_class') or 'all'} flows per class "
+    f"({META['n_train'] + META['n_test']:,} flows after removing exact duplicates), not on every flow of the dataset; class "
+    f"proportions in the sample differ from those of the full data.",
+    "The train and test sets are a random 80/20 split of flows, so flows from the same attack run can fall on both sides; scores "
+    "are probably higher than they would be on traffic from a different capture or testbed.",
+    "Ablations use one seed and frozen hyperparameters; differences smaller than the seed-to-seed spread are not interpreted.",
+    f"The tuning budget was {META['tuning_configs']} random configurations per model and {len(META['seeds'])} seeds, kept small "
+    "because of the size of the data; every model got the same budget.",
+    "The SVM is fitted on a stratified subsample of at most 30,000 records, which shortens its training and changes the class "
+    "balance it sees.",
+    "The LSTM sees each flow as a sequence of one time step, so it is a gated feed-forward layer and not a sequence model.",
+    "Costs were measured on one CPU machine without a GPU; absolute times will differ on other hardware. No decision thresholds "
+    "were tuned.",
 ]
 
 REFERENCES = [
-    "M. Tavallaee, E. Bagheri, W. Lu and A. A. Ghorbani, A detailed analysis of the KDD CUP 99 data set, IEEE CISDA, 2009.",
+    "E. C. P. Neto, S. Dadkhah, R. Ferreira, A. Zohourian, R. Lu and A. A. Ghorbani, CICIoT2023: A real-time dataset and benchmark "
+    "for large-scale attacks in IoT environment, Sensors 23(13), 5941, 2023.",
     "N. V. Chawla, K. W. Bowyer, L. O. Hall and W. P. Kegelmeyer, SMOTE: Synthetic minority over-sampling technique, JAIR 16, 2002.",
     "L. Breiman, Random forests, Machine Learning 45(1), 2001.",
     "S. Hochreiter and J. Schmidhuber, Long short-term memory, Neural Computation 9(8), 1997.",

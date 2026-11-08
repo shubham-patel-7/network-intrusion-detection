@@ -1,12 +1,11 @@
 --extra-index-url https://download.pytorch.org/whl/cpu
 numpy>=1.26
 pandas>=2.0
-# The saved models in models/ are pickles: keep these three at the versions that trained them.
+# The saved models in models/study/ are pickles: keep these two at the versions that trained them.
 scikit-learn==1.9.1
-xgboost==3.4.1
 joblib==1.6.0
 torch>=2.2
 keras>=3.3  # runs the study's MLP and LSTM on the torch backend
-matplotlib>=3.8
+altair>=5.0
 streamlit>=1.50
 pytest>=8.0

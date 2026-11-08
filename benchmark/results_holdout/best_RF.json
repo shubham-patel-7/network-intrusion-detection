@@ -1,0 +1,1 @@
+{"i": 0, "cfg": {"n_estimators": 146, "max_depth": 30, "max_features": "log2", "min_samples_leaf": 2}, "val_macro_f1": 0.7572258453874081, "fit_s": 20.8104469999671, "epochs": null}

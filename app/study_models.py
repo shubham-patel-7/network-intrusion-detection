@@ -1,11 +1,12 @@
-"""The five models of the study, loaded for prediction.
+"""The five models of the study, loaded for prediction on CICIoT2023 flows.
 
 The files in models/study/ are plain scikit-learn objects (Decision Tree, Random Forest, SVM) and Keras files (MLP, LSTM)
-plus the fitted preprocessing, exported by the benchmark project. They were trained on the full KDDTrain+ with the
-settings frozen in the report (see models/study/meta.json for each model's own KDDTest+ result).
+plus the fitted preprocessing, exported by the benchmark project. They were trained on the full training split with the
+settings chosen by the benchmark's random search (see models/study/meta.json for each model's own test result).
 """
 import json
 import os
+import re
 from pathlib import Path
 
 import joblib
@@ -18,9 +19,7 @@ DIR = Path(__file__).resolve().parents[1] / "models" / "study"
 KEYS = ["DT", "RF", "SVM", "MLP", "LSTM"]
 NAME = {"DT": "Decision Tree", "RF": "Random Forest", "SVM": "SVM (RBF)", "MLP": "MLP", "LSTM": "LSTM"}
 KEY_OF = {v: k for k, v in NAME.items()}
-CLASSES = ["Normal", "DoS", "Probe", "R2L", "U2R"]
-CATEGORICAL = ["protocol_type", "service", "flag"]
-LOG_COLS = ("duration", "src_bytes", "dst_bytes")
+LABEL_COLUMNS = ("label", "class", "attack")
 
 
 def available():
@@ -30,6 +29,10 @@ def available():
 
 def meta():
     return json.loads((DIR / "meta.json").read_text())
+
+
+def classes():
+    return meta()["classes"]  # the benign class is first
 
 
 def load_preprocessor():
@@ -43,13 +46,50 @@ def load_model(key):
     return joblib.load(DIR / f"{key}.joblib")
 
 
+def _norm(s):
+    return re.sub(r"[^a-z0-9]", "", str(s).lower())
+
+
+def category(raw):
+    """Category of a raw CICIoT2023 label (any capitalisation), or None if it is not recognised."""
+    n = _norm(raw)
+    if n in ("benigntraffic", "benign"):
+        return "Benign"
+    if n.startswith("ddos"):
+        return "DDoS"
+    if n.startswith("dos"):
+        return "DoS"
+    if n.startswith("mirai"):
+        return "Mirai"
+    if n.startswith("recon") or n == "vulnerabilityscan":
+        return "Recon"
+    if n in ("dnsspoofing", "arpspoofing") or n.startswith("mitm"):
+        return "Spoofing"
+    if n in ("browserhijacking", "backdoormalware", "xss", "uploadingattack", "sqlinjection", "commandinjection"):
+        return "Web-based"
+    if n == "dictionarybruteforce":
+        return "Brute Force"
+    return None
+
+
+def read_flows(source):
+    """Read a CSV of CICIoT2023 flows: the feature columns the models were trained on, plus an optional label column.
+    Returns the DataFrame and the name of the label column (or None)."""
+    df = pd.read_csv(source)
+    df.columns = [str(c).strip() for c in df.columns]
+    need = load_preprocessor()["cols"]
+    missing = [c for c in need if c not in df.columns]
+    if missing:
+        raise ValueError(f"the file lacks these CICIoT2023 columns: {missing[:6]}{' ...' if len(missing) > 6 else ''}")
+    label = next((c for c in df.columns if c.lower() in LABEL_COLUMNS), None)
+    return df, label
+
+
 def transform(pre, df):
-    """Raw NSL-KDD records (41 attribute columns) -> the 121 scaled inputs the models were trained on."""
-    num = df[pre["num"]].astype(float).copy()
-    for c in LOG_COLS:
-        num[c] = np.log1p(num[c])
-    raw = np.hstack([num.values, pre["enc"].transform(df[CATEGORICAL])])
-    return pre["scaler"].transform(raw).astype(np.float32)
+    """Raw flows -> the scaled inputs the models were trained on (same steps as the benchmark's preprocessor)."""
+    x = df[pre["cols"]].apply(pd.to_numeric, errors="coerce").to_numpy(np.float64)
+    x = np.nan_to_num(x, nan=0.0, posinf=0.0, neginf=0.0)
+    return pre["scaler"].transform(x).astype(np.float32)
 
 
 def predict(key, model, X):
@@ -66,7 +106,8 @@ def predict(key, model, X):
 
 
 def classify(key, model, pre, df):
-    """DataFrame with the predicted family, a confidence and an alert flag (anything but Normal) for every record."""
+    """DataFrame with the predicted category, a confidence and an alert flag (anything but benign) for every flow."""
+    cls = classes()
     idx, conf = predict(key, model, transform(pre, df))
-    pred = [CLASSES[i] for i in idx]
-    return pd.DataFrame({"prediction": pred, "confidence": conf, "alert": [p != "Normal" for p in pred]})
+    pred = [cls[i] for i in idx]
+    return pd.DataFrame({"prediction": pred, "confidence": conf, "alert": [i != 0 for i in idx]})
