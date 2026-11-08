@@ -164,7 +164,13 @@ def figures(S, R, A, y, P):
     ax.legend(ncol=5, fontsize=8, loc="lower left", frameon=False, bbox_to_anchor=(0, 1))
     save(fig, "fig_perclass")
     # 3 confusion matrices (seed 0, row-normalised)
-    fig, ax = plt.subplots(1, 5, figsize=(15 if K <= 5 else 21, 3.2 if K <= 5 else 4.2))
+    if K <= 5:
+        fig, ax = plt.subplots(1, 5, figsize=(15, 3.2))
+    else:  # eight classes: two rows of three panels keep the numbers legible
+        fig, axes = plt.subplots(2, 3, figsize=(11.5, 7.8))
+        ax = axes.ravel()
+        for extra in ax[len(M):]:
+            extra.axis("off")
     for a, m in zip(ax, M):
         cm = np.array(R[m][0]["full"]["cm"])
         cn = cm / np.maximum(cm.sum(1, keepdims=True), 1)
@@ -172,7 +178,7 @@ def figures(S, R, A, y, P):
         a.grid(False)
         for i in range(K):
             for j in range(K):
-                a.text(j, i, f"{cn[i, j]:.2f}", ha="center", va="center", fontsize=8 if K <= 5 else 5.5,
+                a.text(j, i, f"{cn[i, j]:.2f}", ha="center", va="center", fontsize=8 if K <= 5 else 7,
                        color="white" if cn[i, j] > .5 else "black")
         a.set_xticks(range(K))
         a.set_yticks(range(K))
@@ -180,9 +186,12 @@ def figures(S, R, A, y, P):
         a.set_yticklabels(c.CLASSES, fontsize=8)
         a.set_title(NAME[m], fontsize=10)
         a.set_xlabel("Predicted")
-    ax[0].set_ylabel("True (row-normalised)")
+        if K > 5 and a not in (ax[0], ax[3]):
+            a.set_ylabel("")
+    for a in (ax[0], ax[3]) if K > 5 else (ax[0],):
+        a.set_ylabel("True (row-normalised)")
     if K > 5:
-        fig.subplots_adjust(wspace=0.55)  # long class names would otherwise touch the next panel
+        fig.subplots_adjust(wspace=0.5, hspace=0.55)  # long class names would otherwise touch the next panel
     save(fig, "fig_cm")
     # 4 ROC: one-versus-rest per class + the binary curve
     nrows = int(np.ceil((K + 1) / 3))

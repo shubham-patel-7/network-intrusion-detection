@@ -208,5 +208,5 @@ def build(df, holdout=None, split_seed=None):
 
 
 def prepare():
-    """Sample (cached), split, scale: the CICIoT2023 counterpart of `common.prepare()` for NSL-KDD."""
+    """Sample (cached), split, scale: the CICIoT2023 counterpart of `common.prepare()`."""
     return build(_cached_sample())
